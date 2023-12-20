@@ -1,5 +1,6 @@
 package ru.kopaev.todo.task;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,14 +20,12 @@ public class Task {
     private Integer id;
     private String name;
     private String description;
-    @ManyToOne()
+    @ManyToOne
     @JoinColumn(name = "category_id", referencedColumnName = "id")
     private Category category;
 
-    @ManyToOne()
+    @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "user_id", referencedColumnName = "id")
     private User user;
-
-
-
 }

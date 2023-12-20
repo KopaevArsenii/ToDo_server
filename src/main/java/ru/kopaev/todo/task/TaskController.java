@@ -14,6 +14,8 @@ import ru.kopaev.todo.user.User;
 import ru.kopaev.todo.user.UserService;
 import ru.kopaev.todo.user.exceptions.UserNotFoundException;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/task")
 @RequiredArgsConstructor
@@ -22,6 +24,17 @@ public class TaskController {
     private final JwtService jwtService;
     private final UserService userService;
     private final CategoryService categoryService;
+    @GetMapping("/getAll")
+    public List<Task> getAllTasks(@RequestHeader(HttpHeaders.AUTHORIZATION) String header) {
+        System.out.println("Hi from getController");
+        String token = jwtService.extractTokenFromHeader(header);
+        String userEmail = jwtService.extractUsername(token);
+
+        User user = userService.findByEmail(userEmail).orElseThrow(UserNotFoundException::new);
+
+        return taskService.findAllTasks(user.getId());
+    }
+
     @PostMapping("/create")
     public ResponseEntity<String> createTask(@RequestBody CreateTaskRequest request, @RequestHeader(HttpHeaders.AUTHORIZATION) String header) {
         String token = jwtService.extractTokenFromHeader(header);
