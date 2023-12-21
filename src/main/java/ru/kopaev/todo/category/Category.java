@@ -6,7 +6,10 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import ru.kopaev.todo.task.Task;
 import ru.kopaev.todo.user.User;
+
+import java.util.List;
 
 @Entity
 @Data
@@ -19,6 +22,10 @@ public class Category {
     private Integer id;
     private String name;
     private String description;
+
+    @OneToMany(mappedBy = "category", cascade = CascadeType.REMOVE)
+    @JsonIgnore
+    private List<Task> tasks;
 
     @ManyToOne
     @JsonIgnore

@@ -13,7 +13,6 @@ import ru.kopaev.todo.task.Task;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 @Data
 @Builder
@@ -34,11 +33,11 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     private Role role;
 
-    @OneToMany(mappedBy = "user")
-    private Set<Category> categories;
+    @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE)
+    private List<Category> categories;
 
     @OneToMany(mappedBy = "user")
-    private Set<Task> tasks;
+    private List<Task> tasks;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

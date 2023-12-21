@@ -10,8 +10,16 @@ import java.util.Optional;
 public class CategoryService {
     private final CategoryRepository categoryRepository;
 
-    public void createNewCategory(Category category) {
+    public void createCategory(Category category) {
         categoryRepository.save(category);
+    }
+
+    public void updateCategory(Category category) {
+        categoryRepository.save(category);
+    }
+
+    public void deleteCategory(Integer id) {
+        categoryRepository.deleteById(id);
     }
 
     public Optional<Category> findById(Integer id) {
