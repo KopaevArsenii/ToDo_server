@@ -47,36 +47,20 @@ public class CategoryController {
         return ResponseEntity.status(HttpStatus.CREATED).body("New category was created!");
     }
     @PutMapping("/edit")
-    public ResponseEntity<String> editCategory(@RequestBody EditCategoryRequest request) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User user = userService.findByEmail(authentication.getName()).orElseThrow(UserNotFoundException::new);
+    public ResponseEntity<String> editCategory(@RequestBody EditCategoryRequest request, @RequestParam Integer id) {
+        categoryService.checkAffiliation(id);
 
-        List<Category> userCategories = user.getCategories();
-        Stream<Category> stream = userCategories.stream();
-        boolean doesCategoryBelongToUser = stream.anyMatch(category -> category.getId().equals(request.getId()));
-        if (!doesCategoryBelongToUser) {
-            throw new CategoryDoesNotBelongToUserException();
-        }
+        Category category = categoryService.findById(id).orElseThrow(CategoryNotFoundException::new);
 
-        Category category = categoryService.findById(request.getId()).orElseThrow(CategoryNotFoundException::new);
         category.setName(request.getName());
         category.setDescription(request.getDescription());
+
         categoryService.updateCategory(category);
         return ResponseEntity.status(HttpStatus.OK).body("Category was updated!");
     }
     @DeleteMapping("/delete")
     public ResponseEntity<String>deleteCategory(@RequestParam Integer id) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User user = userService.findByEmail(authentication.getName()).orElseThrow(UserNotFoundException::new);
-
-        List<Category> userCategories = user.getCategories();
-        Stream<Category> categoryStream = userCategories.stream();
-        boolean doesCategoryBelongToUser = categoryStream
-                .anyMatch(category -> category.getId().equals(id));
-        if (!doesCategoryBelongToUser) {
-            throw new CategoryDoesNotBelongToUserException();
-        }
-
+        categoryService.checkAffiliation(id);
         categoryService.findById(id).orElseThrow(CategoryNotFoundException::new);
         categoryService.deleteCategory(id);
         return ResponseEntity.status(HttpStatus.OK).body("Category was deleted!");

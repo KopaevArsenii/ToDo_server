@@ -1,15 +1,19 @@
 package ru.kopaev.todo.task;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import ru.kopaev.todo.category.Category;
 import ru.kopaev.todo.category.CategoryService;
+import ru.kopaev.todo.category.exceptions.CategoryDoesNotBelongToUserException;
 import ru.kopaev.todo.category.exceptions.CategoryNotFoundException;
-import ru.kopaev.todo.config.JwtService;
 import ru.kopaev.todo.task.dto.CreateTaskRequest;
+import ru.kopaev.todo.task.dto.EditTaskRequest;
+import ru.kopaev.todo.task.exceptions.TaskDoesNotBelongToUser;
+import ru.kopaev.todo.task.exceptions.TaskNotFoundException;
 import ru.kopaev.todo.user.User;
 import ru.kopaev.todo.user.UserService;
 import ru.kopaev.todo.user.exceptions.UserNotFoundException;
@@ -21,26 +25,42 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TaskController {
     private final TaskService taskService;
-    private final JwtService jwtService;
     private final UserService userService;
     private final CategoryService categoryService;
     @GetMapping("/getAll")
-    public List<Task> getAllTasks(@RequestHeader(HttpHeaders.AUTHORIZATION) String header) {
-        System.out.println("Hi from getController");
-        String token = jwtService.extractTokenFromHeader(header);
-        String userEmail = jwtService.extractUsername(token);
-
-        User user = userService.findByEmail(userEmail).orElseThrow(UserNotFoundException::new);
+    public List<Task> getAllTasks() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = userService.findByEmail(authentication.getName()).orElseThrow(UserNotFoundException::new);
 
         return taskService.findAllTasks(user.getId());
     }
 
-    @PostMapping("/create")
-    public ResponseEntity<String> createTask(@RequestBody CreateTaskRequest request, @RequestHeader(HttpHeaders.AUTHORIZATION) String header) {
-        String token = jwtService.extractTokenFromHeader(header);
-        String userEmail = jwtService.extractUsername(token);
+    @PutMapping("/update")
+    public ResponseEntity<String> updateTask(@RequestBody EditTaskRequest request, @RequestParam Integer id) {
+        Task task = taskService.findById(id).orElseThrow(TaskNotFoundException::new);
+        Category category = categoryService.findById(request.getCategoryId()).orElseThrow(CategoryNotFoundException::new);
 
-        User user = userService.findByEmail(userEmail).orElseThrow(UserNotFoundException::new);
+        task.setName(request.getName());
+        task.setDescription(request.getDescription());
+        task.setCategory(category);
+
+        taskService.saveTask(task);
+        return ResponseEntity.status(HttpStatus.OK).body("Task was updated!");
+    }
+
+    @DeleteMapping("/delete")
+    public ResponseEntity<String> deleteTask(@RequestParam Integer id) {
+        taskService.findById(id).orElseThrow(TaskNotFoundException::new);
+        taskService.checkAffiliation(id);
+        taskService.deleteById(id);
+        return ResponseEntity.status(HttpStatus.OK).body("Task was deleted!");
+    }
+
+    @PostMapping("/create")
+    public ResponseEntity<String> createTask(@RequestBody CreateTaskRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = userService.findByEmail(authentication.getName()).orElseThrow(UserNotFoundException::new);
+
         Category category = categoryService.findById(request.getCategoryId()).orElseThrow(CategoryNotFoundException::new);
 
         Task newTask = Task.builder()
@@ -49,13 +69,27 @@ public class TaskController {
                 .category(category)
                 .user(user)
                 .build();
-        taskService.createTask(newTask);
+        taskService.saveTask(newTask);
         return ResponseEntity.ok().body("Task was created!");
     }
 
     @ExceptionHandler
     public ResponseEntity<String> handleCategoryNotFoundException(CategoryNotFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Category not found!");
+    }
+
+    @ExceptionHandler
+    public ResponseEntity<String> handleTaskNotFoundException(TaskNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Task not found!");
+    }
+
+    @ExceptionHandler
+    public ResponseEntity<String> handleTaskDoesNotBelongToUser(TaskDoesNotBelongToUser e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Task doesn't belong to user!");
+    }
+
+    @ExceptionHandler ResponseEntity<String> handleCategoryDoesNotBelongToUser(CategoryDoesNotBelongToUserException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Category doesn't belong to user!");
     }
 
     @ExceptionHandler
