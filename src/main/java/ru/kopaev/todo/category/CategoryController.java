@@ -9,7 +9,7 @@ import ru.kopaev.todo.category.dto.CreateCategoryRequest;
 import ru.kopaev.todo.category.dto.EditCategoryRequest;
 import ru.kopaev.todo.category.exceptions.CategoryDoesNotBelongToUserException;
 import ru.kopaev.todo.category.exceptions.CategoryNotFoundException;
-import ru.kopaev.todo.config.JwtService;
+import ru.kopaev.todo.task.Task;
 import ru.kopaev.todo.user.User;
 import ru.kopaev.todo.user.UserService;
 import ru.kopaev.todo.user.exceptions.UserNotFoundException;
@@ -22,24 +22,19 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public class CategoryController {
     private final CategoryService categoryService;
-    private final JwtService jwtService;
     private final UserService userService;
 
     @GetMapping
-    public List<Category> getAllCategories(@RequestHeader(HttpHeaders.AUTHORIZATION) String header) {
-        String token = jwtService.extractTokenFromHeader(header);
-        String userEmail = jwtService.extractUsername(token);
-
-        User user = userService.findByEmail(userEmail).orElseThrow(UserNotFoundException::new);
+    public List<Category> getAllCategories() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = userService.findByEmail(authentication.getName()).orElseThrow(UserNotFoundException::new);
 
         return user.getCategories();
     }
     @PostMapping("/create")
-    public ResponseEntity<String> createCategory(@RequestBody CreateCategoryRequest request, @RequestHeader(HttpHeaders.AUTHORIZATION) String header) {
-        String token = jwtService.extractTokenFromHeader(header);
-        String userEmail = jwtService.extractUsername(token);
-
-        User user = userService.findByEmail(userEmail).orElseThrow(UserNotFoundException::new);
+    public ResponseEntity<String> createCategory(@RequestBody CreateCategoryRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = userService.findByEmail(authentication.getName()).orElseThrow(UserNotFoundException::new);
 
         Category newCategory = Category.builder()
                 .name(request.getName())
@@ -52,14 +47,13 @@ public class CategoryController {
         return ResponseEntity.status(HttpStatus.CREATED).body("New category was created!");
     }
     @PutMapping("/edit")
-    public ResponseEntity<String> editCategory(@RequestBody EditCategoryRequest request, @RequestHeader(HttpHeaders.AUTHORIZATION) String header) {
-        String token = jwtService.extractTokenFromHeader(header);
-        String userEmail = jwtService.extractUsername(token);
+    public ResponseEntity<String> editCategory(@RequestBody EditCategoryRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = userService.findByEmail(authentication.getName()).orElseThrow(UserNotFoundException::new);
 
-        User user = userService.findByEmail(userEmail).orElseThrow(UserNotFoundException::new);
         List<Category> userCategories = user.getCategories();
         Stream<Category> stream = userCategories.stream();
-        boolean doesCategoryBelongToUser = stream.anyMatch(category -> category.getId() == request.getId());
+        boolean doesCategoryBelongToUser = stream.anyMatch(category -> category.getId().equals(request.getId()));
         if (!doesCategoryBelongToUser) {
             throw new CategoryDoesNotBelongToUserException();
         }
@@ -72,19 +66,18 @@ public class CategoryController {
     }
     @DeleteMapping("/delete")
     public ResponseEntity<String>deleteCategory(@RequestParam Integer id) {
-        //ToDo: rewrite all dumb token extraction to this way;
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
         User user = userService.findByEmail(authentication.getName()).orElseThrow(UserNotFoundException::new);
+
         List<Category> userCategories = user.getCategories();
-        Stream<Category> stream = userCategories.stream();
-        boolean doesCategoryBelongToUser = stream.anyMatch(category -> category.getId() == id);
+        Stream<Category> categoryStream = userCategories.stream();
+        boolean doesCategoryBelongToUser = categoryStream
+                .anyMatch(category -> category.getId().equals(id));
         if (!doesCategoryBelongToUser) {
             throw new CategoryDoesNotBelongToUserException();
         }
 
         categoryService.findById(id).orElseThrow(CategoryNotFoundException::new);
-
         categoryService.deleteCategory(id);
         return ResponseEntity.status(HttpStatus.OK).body("Category was deleted!");
     }
