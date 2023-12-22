@@ -1,13 +1,11 @@
-package ru.kopaev.todo.task.dto;
+package ru.kopaev.todo.category.dto;
 
 import lombok.Builder;
 import lombok.Data;
 
 @Data
 @Builder
-public class EditTaskRequest {
+public class CategoryRequest {
     private String name;
     private String description;
-    private Integer categoryId;
-
 }

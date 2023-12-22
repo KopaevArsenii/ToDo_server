@@ -10,8 +10,7 @@ import ru.kopaev.todo.category.Category;
 import ru.kopaev.todo.category.CategoryService;
 import ru.kopaev.todo.category.exceptions.CategoryDoesNotBelongToUserException;
 import ru.kopaev.todo.category.exceptions.CategoryNotFoundException;
-import ru.kopaev.todo.task.dto.CreateTaskRequest;
-import ru.kopaev.todo.task.dto.EditTaskRequest;
+import ru.kopaev.todo.task.dto.TaskRequest;
 import ru.kopaev.todo.task.exceptions.TaskDoesNotBelongToUser;
 import ru.kopaev.todo.task.exceptions.TaskNotFoundException;
 import ru.kopaev.todo.user.User;
@@ -27,16 +26,30 @@ public class TaskController {
     private final TaskService taskService;
     private final UserService userService;
     private final CategoryService categoryService;
-    @GetMapping("/getAll")
+    @GetMapping
     public List<Task> getAllTasks() {
+        return taskService.findAllTasks();
+    }
+
+    @PostMapping("/create")
+    public ResponseEntity<String> createTask(@RequestBody TaskRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = userService.findByEmail(authentication.getName()).orElseThrow(UserNotFoundException::new);
 
-        return taskService.findAllTasks(user.getId());
+        Category category = categoryService.findById(request.getCategoryId()).orElseThrow(CategoryNotFoundException::new);
+
+        Task newTask = Task.builder()
+                .name(request.getName())
+                .description(request.getDescription())
+                .category(category)
+                .user(user)
+                .build();
+        taskService.saveTask(newTask);
+        return ResponseEntity.ok().body("Task was created!");
     }
 
-    @PutMapping("/update")
-    public ResponseEntity<String> updateTask(@RequestBody EditTaskRequest request, @RequestParam Integer id) {
+    @PutMapping("/edit")
+    public ResponseEntity<String> updateTask(@RequestBody TaskRequest request, @RequestParam Integer id) {
         Task task = taskService.findById(id).orElseThrow(TaskNotFoundException::new);
         Category category = categoryService.findById(request.getCategoryId()).orElseThrow(CategoryNotFoundException::new);
 
@@ -54,23 +67,6 @@ public class TaskController {
         taskService.checkAffiliation(id);
         taskService.deleteById(id);
         return ResponseEntity.status(HttpStatus.OK).body("Task was deleted!");
-    }
-
-    @PostMapping("/create")
-    public ResponseEntity<String> createTask(@RequestBody CreateTaskRequest request) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User user = userService.findByEmail(authentication.getName()).orElseThrow(UserNotFoundException::new);
-
-        Category category = categoryService.findById(request.getCategoryId()).orElseThrow(CategoryNotFoundException::new);
-
-        Task newTask = Task.builder()
-                .name(request.getName())
-                .description(request.getDescription())
-                .category(category)
-                .user(user)
-                .build();
-        taskService.saveTask(newTask);
-        return ResponseEntity.ok().body("Task was created!");
     }
 
     @ExceptionHandler

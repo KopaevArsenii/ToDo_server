@@ -5,17 +5,14 @@ import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import ru.kopaev.todo.category.dto.CreateCategoryRequest;
-import ru.kopaev.todo.category.dto.EditCategoryRequest;
+import ru.kopaev.todo.category.dto.CategoryRequest;
 import ru.kopaev.todo.category.exceptions.CategoryDoesNotBelongToUserException;
 import ru.kopaev.todo.category.exceptions.CategoryNotFoundException;
-import ru.kopaev.todo.task.Task;
 import ru.kopaev.todo.user.User;
 import ru.kopaev.todo.user.UserService;
 import ru.kopaev.todo.user.exceptions.UserNotFoundException;
 
 import java.util.List;
-import java.util.stream.Stream;
 
 @RestController
 @RequestMapping("/api/category")
@@ -32,7 +29,7 @@ public class CategoryController {
         return user.getCategories();
     }
     @PostMapping("/create")
-    public ResponseEntity<String> createCategory(@RequestBody CreateCategoryRequest request) {
+    public ResponseEntity<String> createCategory(@RequestBody CategoryRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = userService.findByEmail(authentication.getName()).orElseThrow(UserNotFoundException::new);
 
@@ -47,7 +44,7 @@ public class CategoryController {
         return ResponseEntity.status(HttpStatus.CREATED).body("New category was created!");
     }
     @PutMapping("/edit")
-    public ResponseEntity<String> editCategory(@RequestBody EditCategoryRequest request, @RequestParam Integer id) {
+    public ResponseEntity<String> editCategory(@RequestBody CategoryRequest request, @RequestParam Integer id) {
         categoryService.checkAffiliation(id);
 
         Category category = categoryService.findById(id).orElseThrow(CategoryNotFoundException::new);
@@ -60,8 +57,8 @@ public class CategoryController {
     }
     @DeleteMapping("/delete")
     public ResponseEntity<String>deleteCategory(@RequestParam Integer id) {
-        categoryService.checkAffiliation(id);
         categoryService.findById(id).orElseThrow(CategoryNotFoundException::new);
+        categoryService.checkAffiliation(id);
         categoryService.deleteCategory(id);
         return ResponseEntity.status(HttpStatus.OK).body("Category was deleted!");
     }

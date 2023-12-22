@@ -20,8 +20,11 @@ public class TaskService {
     private final TaskRepository taskRepository;
     private final UserService userService;
 
-    public List<Task> findAllTasks(Integer id) {
-        return taskRepository.findByUserId(id);
+    public List<Task> findAllTasks() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = userService.findByEmail(authentication.getName()).orElseThrow(UserNotFoundException::new);
+
+        return taskRepository.findByUserId(user.getId());
     }
 
     public Optional<Task> findById(Integer id) {
