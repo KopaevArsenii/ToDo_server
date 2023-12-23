@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import ru.kopaev.todo.auth.dto.LoginRequest;
 import ru.kopaev.todo.auth.dto.AuthenticationResponse;
 import ru.kopaev.todo.auth.dto.RegisterRequest;
+import ru.kopaev.todo.auth.exceptions.EmailAlreadyInUseException;
 import ru.kopaev.todo.config.JwtService;
 import ru.kopaev.todo.user.Role;
 import ru.kopaev.todo.user.User;
@@ -22,6 +23,9 @@ public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
 
     public AuthenticationResponse register(RegisterRequest request) {
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new EmailAlreadyInUseException();
+        }
         User user = User.builder()
                 .firstname(request.getFirstname())
                 .lastname(request.getLastname())
