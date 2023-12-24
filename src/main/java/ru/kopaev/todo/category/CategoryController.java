@@ -13,6 +13,8 @@ import ru.kopaev.todo.user.User;
 import ru.kopaev.todo.user.UserService;
 import ru.kopaev.todo.user.exceptions.UserNotFoundException;
 
+import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 
 @RestController
@@ -25,9 +27,14 @@ public class CategoryController {
     @GetMapping
     public List<Category> getAllCategories() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User user = userService.findByEmail(authentication.getName()).orElseThrow(UserNotFoundException::new);
+        List<Category> categories = userService
+                .findByEmail(authentication.getName())
+                .orElseThrow(UserNotFoundException::new)
+                .getCategories();
 
-        return user.getCategories();
+        categories.sort(Comparator.comparing(Category::getCreatedAt));
+
+        return categories;
     }
     @PostMapping("/create")
     public ResponseEntity<SavedCategoryResponse> createCategory(@RequestBody CategoryRequest request) {
@@ -38,6 +45,7 @@ public class CategoryController {
                 .name(request.getName())
                 .description(request.getDescription())
                 .user(user)
+                .createdAt(LocalDateTime.now())
                 .build();
 
         Category savedCategory = categoryService.createCategory(newCategory);
@@ -54,12 +62,13 @@ public class CategoryController {
     public ResponseEntity<String> editCategory(@RequestBody CategoryRequest request, @RequestParam Integer id) {
         categoryService.checkAffiliation(id);
 
-        Category category = categoryService.findById(id).orElseThrow(CategoryNotFoundException::new);
+        Category updatedCategory = Category.builder()
+                .id(id)
+                .name(request.getName())
+                .description(request.getDescription())
+                .build();
 
-        category.setName(request.getName());
-        category.setDescription(request.getDescription());
-
-        categoryService.updateCategory(category);
+        categoryService.updateCategory(updatedCategory);
         return ResponseEntity.status(HttpStatus.OK).body("Category was updated!");
     }
     @DeleteMapping("/delete")

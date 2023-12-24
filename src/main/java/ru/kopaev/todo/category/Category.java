@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import ru.kopaev.todo.task.Task;
 import ru.kopaev.todo.user.User;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -22,6 +23,8 @@ public class Category {
     private Integer id;
     private String name;
     private String description;
+
+    private LocalDateTime createdAt;
 
     @OneToMany(mappedBy = "category", cascade = CascadeType.REMOVE)
     @JsonIgnore
