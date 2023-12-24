@@ -6,6 +6,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import ru.kopaev.todo.category.dto.CategoryRequest;
+import ru.kopaev.todo.category.dto.SavedCategoryResponse;
 import ru.kopaev.todo.category.exceptions.CategoryDoesNotBelongToUserException;
 import ru.kopaev.todo.category.exceptions.CategoryNotFoundException;
 import ru.kopaev.todo.user.User;
@@ -29,7 +30,7 @@ public class CategoryController {
         return user.getCategories();
     }
     @PostMapping("/create")
-    public ResponseEntity<String> createCategory(@RequestBody CategoryRequest request) {
+    public ResponseEntity<SavedCategoryResponse> createCategory(@RequestBody CategoryRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = userService.findByEmail(authentication.getName()).orElseThrow(UserNotFoundException::new);
 
@@ -39,9 +40,15 @@ public class CategoryController {
                 .user(user)
                 .build();
 
-        categoryService.createCategory(newCategory);
+        Category savedCategory = categoryService.createCategory(newCategory);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body("New category was created!");
+        SavedCategoryResponse categoryResponse = SavedCategoryResponse.builder()
+                .id(savedCategory.getId())
+                .name(savedCategory.getName())
+                .description(savedCategory.getDescription())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(categoryResponse);
     }
     @PutMapping("/edit")
     public ResponseEntity<String> editCategory(@RequestBody CategoryRequest request, @RequestParam Integer id) {

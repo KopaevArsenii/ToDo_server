@@ -17,8 +17,10 @@ public class CategoryService {
     private final CategoryRepository categoryRepository;
     private final UserService userService;
 
-    public void createCategory(Category category) {
-        categoryRepository.save(category);
+    public Category createCategory(Category category) {
+
+        Category savedCategory = categoryRepository.save(category);
+        return savedCategory;
     }
 
     public void updateCategory(Category category) {
