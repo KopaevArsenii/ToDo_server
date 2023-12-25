@@ -91,6 +91,6 @@ public class CategoryController {
 
     @ExceptionHandler
     public ResponseEntity<String> handleUserNotFoundException(CategoryDoesNotBelongToUserException e) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("This category doesn't belong ot user!");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("This category doesn't belong ot user!");
     }
 }

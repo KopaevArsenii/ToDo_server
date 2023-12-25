@@ -9,6 +9,8 @@ import lombok.NoArgsConstructor;
 import ru.kopaev.todo.category.Category;
 import ru.kopaev.todo.user.User;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Data
 @NoArgsConstructor
@@ -20,6 +22,9 @@ public class Task {
     private Integer id;
     private String name;
     private String description;
+    private Boolean done;
+
+    private LocalDateTime createdAt;
     @ManyToOne
     @JoinColumn(name = "category_id", referencedColumnName = "id")
     private Category category;

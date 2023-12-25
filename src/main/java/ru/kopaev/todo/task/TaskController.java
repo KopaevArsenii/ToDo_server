@@ -17,6 +17,7 @@ import ru.kopaev.todo.user.User;
 import ru.kopaev.todo.user.UserService;
 import ru.kopaev.todo.user.exceptions.UserNotFoundException;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -28,7 +29,7 @@ public class TaskController {
     private final CategoryService categoryService;
     @GetMapping
     public List<Task> getAllTasks() {
-        return taskService.findAllTasks();
+        return taskService.getAllTasks();
     }
 
     @PostMapping("/create")
@@ -43,6 +44,8 @@ public class TaskController {
                 .description(request.getDescription())
                 .category(category)
                 .user(user)
+                .done(false)
+                .createdAt(LocalDateTime.now())
                 .build();
         taskService.saveTask(newTask);
         return ResponseEntity.ok().body("Task was created!");
