@@ -32,8 +32,14 @@ public class TaskController {
         return taskService.getAllTasks();
     }
 
+    @GetMapping("/switch")
+    public ResponseEntity<String> switchTaskAsDone(@RequestParam Integer id) {
+        taskService.switchTaskAsDone(id);
+        return ResponseEntity.status(HttpStatus.OK).body("Task was updated");
+    }
+
     @PostMapping("/create")
-    public ResponseEntity<String> createTask(@RequestBody TaskRequest request) {
+    public ResponseEntity<Task> createTask(@RequestBody TaskRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = userService.findByEmail(authentication.getName()).orElseThrow(UserNotFoundException::new);
 
@@ -47,21 +53,21 @@ public class TaskController {
                 .done(false)
                 .createdAt(LocalDateTime.now())
                 .build();
-        taskService.saveTask(newTask);
-        return ResponseEntity.ok().body("Task was created!");
+        Task task = taskService.createTask(newTask);
+        return ResponseEntity.status(HttpStatus.CREATED).body(task);
     }
 
     @PutMapping("/edit")
-    public ResponseEntity<String> updateTask(@RequestBody TaskRequest request, @RequestParam Integer id) {
+    public ResponseEntity<Task> updateTask(@RequestBody TaskRequest request, @RequestParam Integer id) {
+        //ToDo rewrite
         Task task = taskService.findById(id).orElseThrow(TaskNotFoundException::new);
         Category category = categoryService.findById(request.getCategoryId()).orElseThrow(CategoryNotFoundException::new);
 
         task.setName(request.getName());
         task.setDescription(request.getDescription());
         task.setCategory(category);
-
-        taskService.saveTask(task);
-        return ResponseEntity.status(HttpStatus.OK).body("Task was updated!");
+        Task updatedTask = taskService.updateTask(task);
+        return ResponseEntity.status(HttpStatus.OK).body(updatedTask);
     }
 
     @DeleteMapping("/delete")

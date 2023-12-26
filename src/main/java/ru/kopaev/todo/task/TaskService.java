@@ -1,10 +1,12 @@
 package ru.kopaev.todo.task;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import ru.kopaev.todo.task.exceptions.TaskDoesNotBelongToUser;
+import ru.kopaev.todo.task.exceptions.TaskNotFoundException;
 import ru.kopaev.todo.user.User;
 import ru.kopaev.todo.user.UserService;
 import ru.kopaev.todo.user.exceptions.UserNotFoundException;
@@ -44,8 +46,25 @@ public class TaskService {
             throw new TaskDoesNotBelongToUser();
         }
     }
-    public void saveTask(Task task) {
-        taskRepository.save(task);
+    public Task createTask(Task task) {
+        return taskRepository.save(task);
+    }
+
+    @Transactional
+    public void switchTaskAsDone(Integer id) {
+        Task task = taskRepository.findById(id).orElseThrow(TaskNotFoundException::new);
+        task.setDone(!task.getDone());
+    }
+
+    @Transactional
+    public Task updateTask(Task task) {
+        Task updatedTask = taskRepository.findById(task.getId()).orElseThrow(TaskNotFoundException::new);
+
+        updatedTask.setName(task.getName());
+        updatedTask.setDescription(task.getDescription());
+        updatedTask.setCategory(task.getCategory());
+
+        return updatedTask;
     }
 
     public void deleteById(Integer id) {
