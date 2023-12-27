@@ -5,12 +5,17 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import ru.kopaev.todo.category.Category;
+import ru.kopaev.todo.category.CategoryService;
+import ru.kopaev.todo.category.exceptions.CategoryNotFoundException;
+import ru.kopaev.todo.task.dto.TaskRequest;
 import ru.kopaev.todo.task.exceptions.TaskDoesNotBelongToUser;
 import ru.kopaev.todo.task.exceptions.TaskNotFoundException;
 import ru.kopaev.todo.user.User;
 import ru.kopaev.todo.user.UserService;
 import ru.kopaev.todo.user.exceptions.UserNotFoundException;
 
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -20,6 +25,7 @@ import java.util.Optional;
 public class TaskService {
 
     private final TaskRepository taskRepository;
+    private final CategoryService categoryService;
     private final UserService userService;
 
     public List<Task> getAllTasks() {
@@ -46,23 +52,38 @@ public class TaskService {
             throw new TaskDoesNotBelongToUser();
         }
     }
-    public Task createTask(Task task) {
-        return taskRepository.save(task);
+    public Task createTask(TaskRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = userService.findByEmail(authentication.getName()).orElseThrow(UserNotFoundException::new);
+
+        Category category = categoryService.findById(request.getCategoryId()).orElseThrow(CategoryNotFoundException::new);
+
+        Task newTask = Task.builder()
+                .name(request.getName())
+                .description(request.getDescription())
+                .category(category)
+                .user(user)
+                .done(false)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        return taskRepository.save(newTask);
     }
 
     @Transactional
-    public void switchTaskAsDone(Integer id) {
+    public void switchDone(Integer id) {
         Task task = taskRepository.findById(id).orElseThrow(TaskNotFoundException::new);
         task.setDone(!task.getDone());
     }
 
     @Transactional
-    public Task updateTask(Task task) {
-        Task updatedTask = taskRepository.findById(task.getId()).orElseThrow(TaskNotFoundException::new);
+    public Task updateTask(TaskRequest task, Integer id) {
+        Task updatedTask = taskRepository.findById(id).orElseThrow(TaskNotFoundException::new);
+        Category category = categoryService.findById(task.getCategoryId()).orElseThrow(CategoryNotFoundException::new);
 
         updatedTask.setName(task.getName());
         updatedTask.setDescription(task.getDescription());
-        updatedTask.setCategory(task.getCategory());
+        updatedTask.setCategory(category);
 
         return updatedTask;
     }
