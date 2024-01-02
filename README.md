@@ -1,1 +1,1 @@
-This application was created as backend server for ToDo_client repository using Java, Spring framework and PostgresSQL.
+To start an apllication you need to fill application.yml with your data.
